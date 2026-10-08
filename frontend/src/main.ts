@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 interface Ticket { number: number; created_at: string; }
 interface Table { id: number; ticket: Ticket | null; started_at: string | null; }
 interface State { tables: Table[]; waiting: Ticket[]; next_number: number; updated_at: string; }
+const API_BASE = window.location.port === '4200' ? 'http://127.0.0.1:8000/api' : '/api';
 
 @Component({
   selector: 'app-root', standalone: true,
@@ -28,14 +29,14 @@ class AppComponent implements OnInit, OnDestroy {
   state = signal<State | null>(null); busy = signal(false); error = signal('');
   private events?: EventSource;
   constructor(private http: HttpClient, private zone: NgZone) {}
-  ngOnInit() { this.refresh(); this.events = new EventSource('http://127.0.0.1:8000/api/events'); this.events.onmessage = e => this.zone.run(() => this.state.set(JSON.parse(e.data) as State)); }
+  ngOnInit() { this.refresh(); this.events = new EventSource(`${API_BASE}/events`); this.events.onmessage = e => this.zone.run(() => this.state.set(JSON.parse(e.data) as State)); }
   ngOnDestroy() { this.events?.close(); }
   occupied() { return this.state()?.tables.filter(t => !!t.ticket).length ?? 0; }
   nextNumber() { return this.state()?.next_number ?? '—'; }
-  refresh() { this.http.get<State>('http://127.0.0.1:8000/api/state').subscribe({next: s => this.state.set(s), error: () => this.error.set('No se pudo conectar con el servidor. Cierra y abre la aplicación de nuevo.')}); }
-  takeTicket() { this.action(this.http.post<State>('http://127.0.0.1:8000/api/tickets', {})); }
-  complete(id: number) { this.action(this.http.post<State>(`http://127.0.0.1:8000/api/tables/${id}/complete`, {})); }
-  reset() { if (confirm('¿Reiniciar la jornada? Se borrarán los turnos y se liberarán todas las mesas.')) this.action(this.http.delete<State>('http://127.0.0.1:8000/api/state')); }
+  refresh() { this.http.get<State>(`${API_BASE}/state`).subscribe({next: s => this.state.set(s), error: () => this.error.set('No se pudo conectar con el servidor. Cierra y abre la aplicación de nuevo.')}); }
+  takeTicket() { this.action(this.http.post<State>(`${API_BASE}/tickets`, {})); }
+  complete(id: number) { this.action(this.http.post<State>(`${API_BASE}/tables/${id}/complete`, {})); }
+  reset() { if (confirm('¿Reiniciar la jornada? Se borrarán los turnos y se liberarán todas las mesas.')) this.action(this.http.delete<State>(`${API_BASE}/state`)); }
   private action(request: Observable<State>) { this.busy.set(true); this.error.set(''); request.subscribe({next: s => { this.state.set(s); this.busy.set(false); }, error: (e: HttpErrorResponse) => { this.error.set(e.error?.detail ?? 'No se pudo completar la acción.'); this.busy.set(false); }}); }
 }
 bootstrapApplication(AppComponent, {providers: [provideHttpClient()]}).catch(console.error);
