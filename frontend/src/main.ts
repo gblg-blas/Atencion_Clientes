@@ -2,6 +2,8 @@ import { Component, NgZone, OnDestroy, OnInit, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 interface Ticket { number: number; created_at: string; }
 interface Table { id: number; ticket: Ticket | null; started_at: string | null; }
@@ -34,6 +36,6 @@ class AppComponent implements OnInit, OnDestroy {
   takeTicket() { this.action(this.http.post<State>('http://127.0.0.1:8000/api/tickets', {})); }
   complete(id: number) { this.action(this.http.post<State>(`http://127.0.0.1:8000/api/tables/${id}/complete`, {})); }
   reset() { if (confirm('¿Reiniciar la jornada? Se borrarán los turnos y se liberarán todas las mesas.')) this.action(this.http.delete<State>('http://127.0.0.1:8000/api/state')); }
-  private action(request: import('@angular/common/http').Observable<State>) { this.busy.set(true); this.error.set(''); request.subscribe({next: s => { this.state.set(s); this.busy.set(false); }, error: e => { this.error.set(e.error?.detail ?? 'No se pudo completar la acción.'); this.busy.set(false); }}); }
+  private action(request: Observable<State>) { this.busy.set(true); this.error.set(''); request.subscribe({next: s => { this.state.set(s); this.busy.set(false); }, error: (e: HttpErrorResponse) => { this.error.set(e.error?.detail ?? 'No se pudo completar la acción.'); this.busy.set(false); }}); }
 }
 bootstrapApplication(AppComponent, {providers: [provideHttpClient()]}).catch(console.error);
