@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import asyncio
+import sys
+import threading
+import webbrowser
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 TABLE_COUNT = 4
 lock = asyncio.Lock()
@@ -124,3 +129,23 @@ async def events():
             subscribers.discard(queue)
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+web_root = bundle_root / "web"
+if web_root.is_dir():
+    @app.get("/", include_in_schema=False)
+    async def home():
+        return FileResponse(web_root / "index.html")
+
+    app.mount("/", StaticFiles(directory=web_root), name="web")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = 8001
+    threading.Timer(1.2, lambda: webbrowser.open(f"http://127.0.0.1:{port}")).start()
+    print(f"Sistema de turnos activo en http://127.0.0.1:{port}")
+    print("Deja esta ventana abierta mientras uses el sistema. Ciérrala para apagarlo.")
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
