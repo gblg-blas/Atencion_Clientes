@@ -2,6 +2,10 @@
 
 Aplicación local para administrar cuatro mesas de atención. La persona operadora usa **Tomar turno** cuando llega alguien. El sistema entrega el turno a la primera mesa libre; cuando todas están ocupadas, lo coloca en fila. Al pulsar **Finalizar atención**, el siguiente turno pasa automáticamente a esa mesa.
 
+## Ejecutable para Windows
+
+El archivo `TurnosAtencion.exe` inicia el servidor local y abre la aplicación en el navegador. Deja abierta la ventana de consola mientras uses el sistema; ciérrala para apagarlo. Los turnos se guardan en memoria y se borran al cerrar el ejecutable.
+
 ## Iniciar en Windows
 
 1. Descomprime la carpeta del proyecto.
